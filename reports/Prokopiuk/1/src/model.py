@@ -13,6 +13,7 @@ class NeuralNetwork(nn.Module):
             #32*14*14
             nn.Conv2d(in_channels=32, out_channels= 64, kernel_size=3, padding=1),
             #64*14*14
+            nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             #64*7*7
         )
