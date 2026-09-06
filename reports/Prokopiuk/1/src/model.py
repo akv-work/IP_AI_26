@@ -1,15 +1,9 @@
 import torch
 from torch import nn
-import torch.optim as optim
-from torch.utils.data import DataLoader
-from torchvision import datasets
-from torchvision.transforms import v2
-import matplotlib
 
 class NeuralNetwork(nn.Module):
     def __init__(self):
         super().__init__()
-        self.flatten = nn.Flatten()
         self.features = nn.Sequential(
             #1*28*28
             nn.Conv2d(in_channels=1, out_channels=16, kernel_size=3, padding=1),
