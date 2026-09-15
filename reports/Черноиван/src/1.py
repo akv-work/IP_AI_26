@@ -1,3 +1,7 @@
+import matplotlib
+matplotlib.use("TkAgg")
+
+import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -6,6 +10,7 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 import matplotlib.pyplot as plt
 import numpy as np
+from PIL import Image
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Используемое устройство: {device}")
@@ -14,6 +19,7 @@ BATCH_SIZE = 64
 EPOCHS = 10
 LEARNING_RATE = 0.01
 MOMENTUM = 0.9
+
 transform = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.1307,), (0.3081,))
@@ -24,7 +30,6 @@ test_dataset = datasets.MNIST(root="./data", train=False, download=True, transfo
 
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=1000, shuffle=False)
-
 
 
 class SimpleCNN(nn.Module):
@@ -158,8 +163,56 @@ def visualize_prediction(index=0):
     plt.savefig("prediction_example.png")
     plt.show()
 
+
 random_index = np.random.randint(0, len(test_dataset))
 visualize_prediction(random_index)
+
+def visualize_custom_photo(path):
+
+    model.eval()
+
+    # открываем и переводим в градации серого
+    img = Image.open(path).convert("L")
+    img = img.resize((28, 28))
+
+    img_array = np.array(img).astype(np.float32) / 255.0
+
+    if img_array.mean() > 0.5:
+        img_array = 1.0 - img_array
+
+    img_norm = (img_array - 0.1307) / 0.3081
+    input_tensor = torch.tensor(img_norm, dtype=torch.float32).unsqueeze(0).unsqueeze(0).to(device)
+
+    with torch.no_grad():
+        output = model(input_tensor)
+        probabilities = F.softmax(output, dim=1)
+        predicted_label = probabilities.argmax(dim=1).item()
+        confidence = probabilities.max().item()
+
+    plt.figure(figsize=(4, 4))
+    plt.imshow(img_array, cmap="gray")
+    plt.title(f"Своя фотография\n"
+              f"Предсказание: {predicted_label} (уверенность {confidence*100:.1f}%)")
+    plt.axis("off")
+    plt.savefig("prediction_custom_photo.png")
+    plt.show()
+
+    print(f"Своя фотография ({path}): предсказан класс {predicted_label}, "
+          f"уверенность {confidence*100:.1f}%")
+
+
+custom_photo_candidates = ["my_photo.png", "my_photo.jpg", "my_photo.jpeg"]
+custom_photo_path = None
+for candidate in custom_photo_candidates:
+    if os.path.exists(candidate):
+        custom_photo_path = candidate
+        break
+
+if custom_photo_path is not None:
+    print(f"\nНайдена своя фотография: {custom_photo_path}, проверяем на модели...")
+    visualize_custom_photo(custom_photo_path)
+else:
+    print("\nСвоя фотография (my_photo.png / .jpg) не найдена в папке - пропускаем этот шаг.")
 
 torch.save(model.state_dict(), "mnist_cnn_sgd.pth")
 print("Модель сохранена в mnist_cnn_sgd.pth")
