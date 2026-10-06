@@ -1,0 +1,321 @@
+import os
+
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
+import time
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torchvision import datasets, transforms, models
+from torchvision.transforms.functional import to_pil_image
+import matplotlib
+
+matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
+from PIL import Image, ImageOps
+
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Используемое устройство: {device}")
+
+
+# ---------- Расшифровка классов Fashion-MNIST ----------
+FASHION_CLASSES = [
+    "T-shirt/top", "Trouser", "Pullover", "Dress", "Coat",
+    "Sandal", "Shirt", "Sneaker", "Bag", "Ankle boot"
+]
+
+
+# ---------- Трансформации для ResNet18 ----------
+transform_train = transforms.Compose([
+    transforms.Resize((32, 32)),
+    transforms.ToTensor(),
+    transforms.Lambda(lambda x: x.repeat(3, 1, 1)),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                         std=[0.229, 0.224, 0.225])
+])
+
+transform_test = transforms.Compose([
+    transforms.Resize((32, 32)),
+    transforms.ToTensor(),
+    transforms.Lambda(lambda x: x.repeat(3, 1, 1)),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                         std=[0.229, 0.224, 0.225])
+])
+
+
+# ---------- Датасет Fashion-MNIST ----------
+train_dataset = datasets.FashionMNIST(root='./data', train=True,
+                                      download=True, transform=transform_train)
+test_dataset = datasets.FashionMNIST(root='./data', train=False,
+                                     download=True, transform=transform_test)
+
+train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True)
+test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=64, shuffle=False)
+
+
+# ---------- Предобученный ResNet18 ----------
+resnet18 = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
+num_ftrs = resnet18.fc.in_features
+resnet18.fc = nn.Linear(num_ftrs, 10)
+resnet18 = resnet18.to(device)
+
+n_params = sum(p.numel() for p in resnet18.parameters() if p.requires_grad)
+print(f"Обучаемых параметров в ResNet18: {n_params:,}")
+
+criterion = nn.CrossEntropyLoss()
+# Оптимизатор SGD (вариант 2)
+optimizer = optim.SGD(resnet18.parameters(), lr=0.01, momentum=0.9)
+
+
+# ---------- Обучение ----------
+epochs = 5
+train_losses = []
+test_accuracies = []
+
+print("\n--- Начало обучения (Fashion-MNIST, ResNet18, SGD) ---")
+
+for epoch in range(epochs):
+    t_start = time.time()
+    resnet18.train()
+    running_loss = 0.0
+
+    for i, (images, labels) in enumerate(train_loader):
+        images, labels = images.to(device), labels.to(device)
+
+        optimizer.zero_grad()
+        outputs = resnet18(images)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+
+        running_loss += loss.item() * images.size(0)
+
+        if (i + 1) % 100 == 0:
+            print(f"Эпоха [{epoch + 1}/{epochs}], "
+                  f"Шаг [{i + 1}/{len(train_loader)}], "
+                  f"Текущий Loss: {loss.item():.4f}")
+
+    epoch_loss = running_loss / len(train_loader.dataset)
+    train_losses.append(epoch_loss)
+
+    resnet18.eval()
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for images, labels in test_loader:
+            images, labels = images.to(device), labels.to(device)
+            outputs = resnet18(images)
+            _, predicted = torch.max(outputs, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+
+    accuracy = 100 * correct / total
+    test_accuracies.append(accuracy)
+
+    epoch_time = time.time() - t_start
+    print(f"--- Итог Эпохи [{epoch + 1}/{epochs}]: "
+          f"Loss = {epoch_loss:.4f} | "
+          f"Test Accuracy = {accuracy:.2f}% | "
+          f"Время: {epoch_time:.1f} с ---")
+
+
+# ---------- Графики ----------
+plt.figure(figsize=(12, 5))
+
+plt.subplot(1, 2, 1)
+plt.plot(range(1, epochs + 1), train_losses, marker='o', label='Train Loss')
+plt.title('График изменения ошибки (Loss)')
+plt.xlabel('Эпоха')
+plt.ylabel('Loss')
+plt.grid(True)
+
+plt.subplot(1, 2, 2)
+plt.plot(range(1, epochs + 1), test_accuracies, marker='o',
+         color='green', label='Test Accuracy')
+plt.title('График точности (Accuracy)')
+plt.xlabel('Эпоха')
+plt.ylabel('Accuracy (%)')
+plt.grid(True)
+
+plt.tight_layout()
+plt.show()
+
+
+# ============================================================
+# АВТОГЕНЕРАЦИЯ item.png ИЗ ТЕСТОВОГО ДАТАСЕТА
+# ============================================================
+TARGET_CLASS = 0          # 0 = T-shirt/top (можно 1..9)
+TARGET_FILENAME = 'item.png'
+
+print(f"\n--- Генерация {TARGET_FILENAME} из датасета ---")
+
+found_idx = None
+for i in range(len(test_dataset)):
+    _, sample_label = test_dataset[i]
+    if sample_label == TARGET_CLASS:
+        found_idx = i
+        break
+
+if found_idx is None:
+    print(f"Не найден класс {TARGET_CLASS} в датасете")
+else:
+    sample_img, sample_label = test_dataset[found_idx]
+
+    # Обратная нормализация: x * std + mean (Fashion-MNIST: 0.2860, 0.3530)
+    img_denorm = sample_img * 0.3530 + 0.2860
+    img_denorm = torch.clamp(img_denorm, 0, 1)
+
+    pil_img = to_pil_image(img_denorm[0])
+    pil_img.save(TARGET_FILENAME)
+
+    print(f"✓ Сохранили {TARGET_FILENAME}")
+    print(f"  Индекс в датасете: {found_idx}")
+    print(f"  Истинный класс: {FASHION_CLASSES[sample_label]} ({sample_label})")
+
+
+# ---------- Тест одного изображения на ResNet18 ----------
+def test_custom_image(model, image_path, device):
+    print(f"\nАнализируем изображение: {image_path}")
+    model.eval()
+    try:
+        img = Image.open(image_path).convert('L')
+        if img.getpixel((0, 0)) > 127:
+            img = ImageOps.invert(img)
+            print("✓ Фон был белым — изображение инвертировано")
+
+        transform = transforms.Compose([
+            transforms.Resize((32, 32)),
+            transforms.ToTensor(),
+            transforms.Lambda(lambda x: x.repeat(3, 1, 1)),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])
+        ])
+
+        img_tensor = transform(img).unsqueeze(0).to(device)
+        with torch.no_grad():
+            output = model(img_tensor)
+            _, predicted = torch.max(output, 1)
+
+        pred_class = FASHION_CLASSES[predicted.item()]
+        print(f"ResNet18 предсказывает: {pred_class} ({predicted.item()})")
+
+        plt.figure(figsize=(4, 4))
+        plt.imshow(img, cmap='gray')
+        plt.title(f'ResNet18 предсказывает:\n{pred_class}', fontsize=14)
+        plt.axis('off')
+        plt.show()
+
+    except FileNotFoundError:
+        print(f"Ошибка: Файл '{image_path}' не найден.")
+
+
+test_custom_image(resnet18, TARGET_FILENAME, device)
+
+
+# ---------- Кастомная CNN из ЛР №1 (вариант 2) ----------
+class SimpleCNN_LR2_v2(nn.Module):
+    def __init__(self):
+        super(SimpleCNN_LR2_v2, self).__init__()
+        self.conv1 = nn.Conv2d(in_channels=1, out_channels=16,
+                               kernel_size=3, padding=1)
+        self.relu = nn.ReLU()
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.conv2 = nn.Conv2d(in_channels=16, out_channels=32,
+                               kernel_size=3, padding=1)
+        self.fc1 = nn.Linear(32 * 7 * 7, 128)
+        self.fc2 = nn.Linear(128, 10)
+
+    def forward(self, x):
+        x = self.pool(self.relu(self.conv1(x)))
+        x = self.pool(self.relu(self.conv2(x)))
+        x = x.view(x.size(0), -1)
+        x = self.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
+
+
+# ---------- Сравнение двух моделей на одном изображении ----------
+def test_custom_image_both_models(resnet_model, custom_model_path,
+                                  image_path, device):
+    print(f"\n{'=' * 60}")
+    print(f"ТЕСТИРОВАНИЕ ИЗОБРАЖЕНИЯ: {image_path}")
+    print(f"{'=' * 60}")
+
+    try:
+        img = Image.open(image_path).convert('L')
+        if img.getpixel((0, 0)) > 127:
+            img = ImageOps.invert(img)
+            print("✓ Фон был белым — изображение инвертировано")
+
+        # --- ResNet18 ---
+        transform_resnet = transforms.Compose([
+            transforms.Resize((32, 32)),
+            transforms.ToTensor(),
+            transforms.Lambda(lambda x: x.repeat(3, 1, 1)),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])
+        ])
+        img_resnet = transform_resnet(img).unsqueeze(0).to(device)
+        resnet_model.eval()
+        with torch.no_grad():
+            output_resnet = resnet_model(img_resnet)
+            _, pred_resnet = torch.max(output_resnet, 1)
+        pred_resnet_class = FASHION_CLASSES[pred_resnet.item()]
+        print(f"\nResNet18: {pred_resnet.item()} ({pred_resnet_class})")
+
+        # --- Кастомная CNN ---
+        custom_model = SimpleCNN_LR2_v2().to(device)
+        try:
+            custom_model.load_state_dict(
+                torch.load(custom_model_path, map_location=device,
+                           weights_only=True)
+            )
+            print(f"Загружены веса из: {custom_model_path}")
+        except FileNotFoundError:
+            print(f"Файл {custom_model_path} не найден!")
+            print("Сначала выполните ЛР №1 (вариант 2) и сохраните модель.")
+            return
+
+        custom_model.eval()
+        transform_custom = transforms.Compose([
+            transforms.Resize((28, 28)),
+            transforms.ToTensor(),
+            transforms.Normalize((0.2860,), (0.3530,))
+        ])
+        img_custom = transform_custom(img).unsqueeze(0).to(device)
+        with torch.no_grad():
+            output_custom = custom_model(img_custom)
+            _, pred_custom = torch.max(output_custom, 1)
+        pred_custom_class = FASHION_CLASSES[pred_custom.item()]
+        print(f"Custom CNN (ЛР1): {pred_custom.item()} ({pred_custom_class})")
+
+        # --- Визуализация ---
+        fig, axes = plt.subplots(1, 3, figsize=(12, 4))
+
+        axes[0].imshow(img, cmap='gray')
+        axes[0].set_title('Оригинал', fontsize=10)
+        axes[0].axis('off')
+
+        axes[1].imshow(img, cmap='gray')
+        axes[1].set_title(f'ResNet18\n{pred_resnet_class}',
+                          fontsize=10, color='blue', fontweight='bold')
+        axes[1].axis('off')
+
+        axes[2].imshow(img, cmap='gray')
+        axes[2].set_title(f'Custom CNN (ЛР1)\n{pred_custom_class}',
+                          fontsize=10, color='green', fontweight='bold')
+        axes[2].axis('off')
+
+        plt.suptitle('Сравнение моделей (Fashion-MNIST)',
+                     fontsize=12, fontweight='bold')
+        plt.tight_layout()
+        plt.show()
+
+        if pred_resnet.item() == pred_custom.item():
+            print("\n✓ Обе модели дали ОДИНАКОВЫЙ результат!")
+        else:
+            print("✗ Модели дали РАЗНЫЕ результаты")
+
+    except FileNotFoundError:
+        print(f"Ошибка: Файл '{image_path}' не найден!")
