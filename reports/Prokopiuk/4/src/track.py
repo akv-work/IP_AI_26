@@ -1,10 +1,3 @@
-"""Сохранение результата трекинга в файл (без окна).
-
-    python track.py                          # bytetrack по videos/rps2.mp4
-    python track.py --tracker botsort
-    python track.py --source videos/rps.mp4 --tracker botsort
-"""
-
 import argparse
 from pathlib import Path
 
