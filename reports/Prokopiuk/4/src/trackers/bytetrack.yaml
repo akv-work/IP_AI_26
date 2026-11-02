@@ -1,0 +1,9 @@
+tracker_type: bytetrack
+
+track_high_thresh: 0.30   # первый этап сопоставления
+track_low_thresh: 0.10    # второй этап (слабые детекции)
+new_track_thresh: 0.30    # порог старта нового трека
+track_buffer: 45          # кадров держать потерянный трек (~1.5 c при 30 fps)
+match_thresh: 0.80        # порог ассоциации по IoU
+
+fuse_score: True          # обязателен для ultralytics 8.4.x (иначе AttributeError)
