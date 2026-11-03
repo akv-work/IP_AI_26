@@ -1,0 +1,16 @@
+tracker_type: botsort
+
+track_high_thresh: 0.30
+track_low_thresh: 0.10
+new_track_thresh: 0.30
+track_buffer: 45
+match_thresh: 0.80
+
+fuse_score: True          # обязателен для ultralytics 8.4.x
+
+# BoT-SORT specifics
+gmc_method: sparseOptFlow # компенсация движения камеры (ролики сняты с рук)
+with_reid: False          # без отдельной ReID-модели
+proximity_thresh: 0.5
+appearance_thresh: 0.8
+model: auto
