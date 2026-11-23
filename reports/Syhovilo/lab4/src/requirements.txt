@@ -1,0 +1,7 @@
+# Colab Python 3 + T4
+ultralytics>=8.4.212,<9
+lap>=0.5.12
+PyYAML>=6
+opencv-python-headless>=4.8
+pandas>=2.0
+matplotlib>=3.6

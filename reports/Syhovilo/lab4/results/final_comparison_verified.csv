@@ -1,0 +1,11 @@
+﻿tracker,frames,frames_with_tracks,coverage_pct,unique_ids,multi_object_frames,multi_object_pct,short_tracks_lt10,median_track_frames,max_track_frames,detections
+botsort,417,375,89.93,13,134,32.13,4,17.0,134,511
+bytetrack,417,373,89.45,13,134,32.13,4,14.0,130,509
+botsort_tuned,417,375,89.93,15,131,31.41,5,16.0,110,507
+bytetrack_tuned,417,372,89.21,15,131,31.41,6,13.0,130,504
+botsort_buffer60,417,375,89.93,13,134,32.13,4,17.0,134,511
+botsort_high018,417,373,89.45,12,129,30.94,3,20.0,134,503
+botsort_new018,417,375,89.93,13,134,32.13,4,17.0,134,511
+bytetrack_buffer60,417,373,89.45,13,134,32.13,4,14.0,130,509
+bytetrack_high018,417,371,88.97,13,129,30.94,4,14.0,130,501
+bytetrack_new018,417,373,89.45,13,134,32.13,4,14.0,130,509

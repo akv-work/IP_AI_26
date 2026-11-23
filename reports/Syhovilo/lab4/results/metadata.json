@@ -1,0 +1,32 @@
+{
+  "source_frames": {
+    "own": 417,
+    "internet": 420
+  },
+  "own_video": {
+    "filename": "E1A90F88-621A-484A-B1A4-333A0E171C2A.mov",
+    "frames": 417,
+    "fps": 19.984,
+    "resolution": [
+      1280,
+      720
+    ],
+    "origin": "видеозапись студента"
+  },
+  "internet_video": {
+    "filename": "internet_rps.mp4",
+    "frames": 420,
+    "fps": 15,
+    "resolution": [
+      720,
+      1280
+    ],
+    "clip_start_seconds": 27,
+    "clip_duration_seconds": 28,
+    "source_url": "не указан в переданных материалах"
+  },
+  "model": "YOLO26m (best.pt из лабораторной №3)",
+  "environment": "Google Colab, Tesla T4, Ultralytics YOLO",
+  "original_total_experiments": 14,
+  "methodic": "Крощенко А. А. Лабораторная работа №4: Трекинг множественных объектов"
+}
