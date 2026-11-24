@@ -1,5 +1,0 @@
-﻿tracker,frames,frames_with_tracks,coverage_pct,unique_ids,multi_object_frames,multi_object_pct,short_tracks_lt10,median_track_frames,max_track_frames,detections
-internet_botsort,420,305,72.62,8,6,1.43,2,26.0,103,311
-internet_bytetrack,420,305,72.62,8,6,1.43,2,25.0,105,311
-internet_botsort_tuned,420,274,65.24,9,5,1.19,3,31.0,70,279
-internet_bytetrack_tuned,420,262,62.38,9,5,1.19,4,30.0,69,267

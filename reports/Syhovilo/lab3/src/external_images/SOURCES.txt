@@ -1,8 +1,0 @@
-Изображения жестов загружены с Wikimedia Commons.
-Автор: Sertion.
-Лицензия: Creative Commons Attribution-ShareAlike 3.0 (CC BY-SA 3.0).
-Rock: https://commons.wikimedia.org/wiki/File:Rock-paper-scissors_(rock).png
-Paper: https://commons.wikimedia.org/wiki/File:Rock-paper-scissors_(paper).png
-Scissors: https://commons.wikimedia.org/wiki/File:Rock-paper-scissors_(scissors).png
-Изображения используются для демонстрации работы обученного детектора.
-Для обработки прозрачный фон PNG преобразуется в белый фон JPG.

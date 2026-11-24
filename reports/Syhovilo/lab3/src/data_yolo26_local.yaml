@@ -1,9 +1,0 @@
-path: C:\Users\Владислав\oiis3syhovilo\dataset
-train: train/images
-val: valid/images
-test: test/images
-nc: 3
-names:
-- Paper
-- Rock
-- Scissors
